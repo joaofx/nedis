@@ -6,13 +6,21 @@
     [TestFixture]
     public class QueueManagerTest
     {
-        [Test]
-        public void Should_add_item_at_queue()
-        {
-            var queueManager = new QueueManager();
-            queueManager.Enqueue("purchase", 1);
+        private readonly QueueManager queueManager;
 
-            queueManager.Dequeue("purchase").ShouldEqual(1);
+        public QueueManagerTest()
+        {
+            this.queueManager = new QueueManager();
+        }
+
+        [Test]
+        public void Should_add_item_and_retrive_from_queue()
+        {
+            this.queueManager.Enqueue("purchase", 1);
+            this.queueManager.Enqueue("purchase", 2);
+
+            this.queueManager.Dequeue("purchase").ShouldEqual(1);
+            this.queueManager.Dequeue("purchase").ShouldEqual(2);
         }
     }
 }
