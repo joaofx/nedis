@@ -8,13 +8,17 @@
     [TestFixture]
     public class QueueManagerTest
     {
-        private readonly NedisQueue nedisQueue;
-        private readonly IExecutable executable;
+        private NedisQueue nedisQueue;
+        private IExecutable executable;
 
-        public QueueManagerTest()
+        [SetUp]
+        public void BeforeTest()
         {
+            SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
             this.nedisQueue = new NedisQueue();
             this.executable = MockRepository.GenerateMock<IExecutable>();
+
+            this.nedisQueue.Clear("to_index");
         }
 
         [Test]
@@ -40,12 +44,6 @@
                 x => x.Repeat.Twice());
 
             Thread.Sleep(10000);
-        }
-
-        [TestFixtureTearDown]
-        public void AfterTest()
-        {
-            this.nedisQueue.Dispose();
         }
 
         public interface IExecutable

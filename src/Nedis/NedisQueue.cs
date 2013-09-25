@@ -2,13 +2,11 @@ namespace Nedis
 {
     using System;
     using System.Diagnostics;
-    using System.Threading;
     using System.Threading.Tasks;
     using ServiceStack.Redis;
 
-    public class NedisQueue : IDisposable
+    public class NedisQueue
     {
-        private Thread subscribeThread;
         private const string NewItem = "NewItem";
 
         public void Enqueue(string queueName, int id)
@@ -39,37 +37,38 @@ namespace Nedis
 
         public void Subscribe(string queueName, Action action)
         {
-            this.subscribeThread = new Thread(() =>
+            Task.Factory.StartNew(() =>
             {
-                using (var client = new RedisClient("localhost"))
+                using (var client1 = new RedisClient("localhost"))
                 {
-                    using (var subscription = client.CreateSubscription())
+                    using (var subscription1 = client1.CreateSubscription())
                     {
-                        subscription.OnSubscribe =
+                        subscription1.OnSubscribe =
                             channel => Debug.WriteLine(string.Format("Subscribed to '{0}'", channel));
 
-                        subscription.OnUnSubscribe =
+                        subscription1.OnUnSubscribe =
                             channel => Debug.WriteLine(string.Format("UnSubscribed from '{0}'", channel));
 
-                        subscription.OnMessage = (channel, msg) =>
+                        subscription1.OnMessage = (channel, msg) =>
                         {
                             Debug.WriteLine(string.Format("Received '{0}' from channel '{1}' Busy: {2}", msg, channel, false));
                             action();
                         };
 
-                        subscription.SubscribeToChannels(queueName);
+                        subscription1.SubscribeToChannels(queueName);
 
                         Debug.WriteLine("Subscribed");
                     }
                 }
-            });
-
-            this.subscribeThread.Start();
+            }).Start();
         }
 
-        public void Dispose()
+        public void Clear(string queueName)
         {
-            this.subscribeThread.Abort();
+            using (var client = new RedisClient("localhost"))
+            {
+                client.Lists[queueName].Clear();
+            }
         }
     }
 }
